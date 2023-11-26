@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+  <title>BPO Agent Breaks Dashboard</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .container {
+      flex: 1;
+    }
+
+    #signatureFooter {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #f8f9fa;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    #logo {
+      max-width: 100px;
+      max-height: 100px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <img src="logo.jpg" alt="Logo" id="logo">
+    <h1>BPO Agent Breaks Dashboard</h1>
+
+    <div class="input-field">
+      <select id="breakTypeDropdown">
+        <option value="short">Short Break (5 minutes)</option>
+        <option value="medium">Medium Break (15 minutes)</option>
+        <option value="long">Long Break (30 minutes)</option>
+      </select>
+      <label for="breakTypeDropdown">Select Break Type</label>
+    </div>
+
+    <div class="row">
+      <div class="col s6">
+        <canvas id="pieChart"></canvas>
+        <p id="piePercentage" class="center-align"></p>
+      </div>
+      <div class="col s6">
+        <canvas id="barChart"></canvas>
+        <p id="barPercentage" class="center-align"></p>
+      </div>
+    </div>
+
+    <div class="input-field">
+      <button class="btn waves-effect waves-light" onclick="startStopwatch()">Start Break Stopwatch</button>
+      <button class="btn waves-effect waves-light red" onclick="stopBreak()">Stop Break</button>
+      <div id="stopwatch" class="center-align" style="margin-top: 10px;"></div>
+      <div id="breakStatus" class="center-align" style="margin-top: 10px;"></div>
+    </div>
+
+    <button class="btn waves-effect waves-light" onclick="calculateBreaks()">Calculate Breaks</button>
+
+    <button class="btn waves-effect waves-light" onclick="exportToExcel()">Export to Excel</button>
+
+    <div id="signatureFooter" class="center-align" style="margin-top: 20px;">Made by Atharv Joshi - Truly Dynamic</div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script>
+    let stopwatchInterval;
+    let remainingTime;
+    let breakActive = false;
+    let breakStartTime;
+    let breakEndTime;
+
+    // Mapping break duration to break type
+    const breakDurationMap = {
+      short: 5,
+      medium: 15,
+      long: 30,
+    };
+
+    $(document).ready(function(){
+      $('select').formSelect();
+    });
+
+    function calculateBreaks() {
+      const breakType = $('#breakTypeDropdown').val();
+      const pieChartCanvas = document.getElementById('pieChart');
+      const barChartCanvas = document.getElementById('barChart');
+      const piePercentage = document.getElementById('piePercentage');
+      const barPercentage = document.getElementById('barPercentage');
+
+      // Use the selected break type to get the corresponding break duration
+      const breakDuration = breakDurationMap[breakType];
+
+      // Simulate break data for the selected type
+      const breakData = generateBreakData(breakType, breakDuration);
+
+      // Calculate total break time
+      const totalBreakTime = breakData.reduce((total, breakRecord) => total + breakRecord.duration, 0);
+
+      // Update pie chart
+      renderPieChart(pieChartCanvas, breakData, breakType);
+      piePercentage.innerText = `Total: ${totalBreakTime} minutes`;
+
+      // Update bar chart
+      renderBarChart(barChartCanvas, breakData, breakType);
+      barPercentage.innerText = `Total: ${totalBreakTime} minutes`;
+
+      // Reset stopwatch
+      clearInterval(stopwatchInterval);
+      remainingTime = 0;
+      breakActive = false;
+      updateStopwatch();
+      updateBreakStatus();
+    }
+
+    function generateBreakData(breakType, duration) {
+      const startTime = getRandomTime();
+      const endTime = getRandomTime();
+      const breakData = [{ type: breakType, startTime, endTime, duration }];
+      return breakData;
+    }
+
+    function getRandomTime() {
+      const hours = String(Math.floor(Math.random() * 12)).padStart(2, '0');
+      const minutes = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    function renderPieChart(canvas, data, breakType) {
+      const ctx = canvas.getContext('2d');
+      const filteredData = data.filter(record => record.type === breakType);
+      const totalDuration = filteredData.reduce((total, record) => total + record.duration, 0);
+
+      const pieChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: [breakType],
+          datasets: [{
+            data: [totalDuration],
+            backgroundColor: ['#FF6384'],
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+        },
+      });
+    }
+
+    function renderBarChart(canvas, data, breakType) {
+      const ctx = canvas.getContext('d');
+      const filteredData = data.filter(record => record.type === breakType);
+
+      const barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [breakType],
+          datasets: [{
+            data: [filteredData.reduce((total, record) => total + record.duration, 0)],
+            backgroundColor: ['#36A2EB'],
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+        },
+      });
+    }
+
+    function startStopwatch() {
+      const breakType = $('#breakTypeDropdown').val();
+      const breakDuration = breakDurationMap[breakType];
+      const breakData = generateBreakData(breakType, breakDuration);
+      remainingTime = breakData.length > 0 ? breakData[0].duration * 60 : 0;
+      breakActive = true;
+      breakStartTime = new Date(); // Record break start time
+      breakEndTime = null; // Reset break end time
+
+      clearInterval(stopwatchInterval);
+      stopwatchInterval = setInterval(updateStopwatch, 1000);
+      updateBreakStatus();
+    }
+
+    function stopBreak() {
+      clearInterval(stopwatchInterval);
+      breakEndTime = new Date(); // Record break end time
+      const elapsedTime = Math.floor((breakEndTime - breakStartTime) / 1000 / 60); // Calculate elapsed time in minutes
+
+      if (elapsedTime > remainingTime) {
+        const exceededTime = elapsedTime - remainingTime;
+        alert(`Break time exceeded by ${exceededTime} minutes.`);
+      }
+
+      remainingTime = 0;
+      breakActive = false;
+      updateStopwatch();
+      updateBreakStatus();
+    }
+
+    function updateStopwatch() {
+      const minutes = Math.floor(remainingTime / 60);
+      const seconds = remainingTime % 60;
+      const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      $('#stopwatch').text(`Time remaining: ${formattedTime}`);
+
+      if (remainingTime === 0) {
+        clearInterval(stopwatchInterval);
+        breakActive = false;
+        updateBreakStatus();
+      } else {
+        remainingTime--;
+      }
+    }
+
+    function updateBreakStatus() {
+      const breakStatus = document.getElementById('breakStatus');
+      breakStatus.innerText = breakActive ? 'Break in progress' : 'No active break';
+    }
+
+    function exportToExcel() {
+      const breakType = $('#breakTypeDropdown').val();
+      const breakDuration = breakDurationMap[breakType];
+      const breakData = generateBreakData(breakType, breakDuration);
+      
+      // Add elapsed time and exceeded time to break data
+      breakData[0].elapsedTime = Math.floor((breakEndTime - breakStartTime) / 1000 / 60);
+      breakData[0].exceededTime = Math.max(breakData[0].elapsedTime - breakData[0].duration, 0);
+
+      const worksheet = XLSX.utils.json_to_sheet(breakData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'BreakData');
+      XLSX.writeFile(workbook, 'break_data.xlsx');
+    }
+  </script>
+</body>
+</html>
