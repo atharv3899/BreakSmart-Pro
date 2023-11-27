@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
   <title>BPO Agent Breaks Dashboard</title>
   <style>
     body {
@@ -39,13 +40,18 @@
 
   <div class="container">
     <img src="logo.jpg" alt="Logo" id="logo">
-    <h1>BPO Agent Breaks Dashboard</h1>
+    <h1>Break Smart Pro</h1>
 
     <div class="input-field">
       <select id="breakTypeDropdown">
-        <option value="short">Short Break (5 minutes)</option>
-        <option value="medium">Medium Break (15 minutes)</option>
-        <option value="long">Long Break (30 minutes)</option>
+        <option value="system_issue">System Issue (20 minutes)</option>
+        <option value="lunch">Lunch (30 minutes)</option>
+        <option value="bio_break">Bio Break (15 minutes)</option>
+        <option value="tea">Tea (15 minutes)</option>
+        <option value="tl_briefing">TL Briefing (1 hour)</option>
+        <option value="er_hr_briefing">ER/HR Briefing (30 minutes)</option>
+        <option value="quality_briefing">Quality Briefing (1 hour)</option>
+        <option value="training">Training (30 minutes)</option>
       </select>
       <label for="breakTypeDropdown">Select Break Type</label>
     </div>
@@ -86,9 +92,14 @@
 
     // Mapping break duration to break type
     const breakDurationMap = {
-      short: 5,
-      medium: 15,
-      long: 30,
+      system_issue: 20,
+      lunch: 30,
+      bio_break: 15,
+      tea: 15,
+      tl_briefing: 60,
+      er_hr_briefing: 30,
+      quality_briefing: 60,
+      training: 30,
     };
 
     $(document).ready(function(){
@@ -130,8 +141,40 @@
     function generateBreakData(breakType, duration) {
       const startTime = getRandomTime();
       const endTime = getRandomTime();
-      const breakData = [{ type: breakType, startTime, endTime, duration }];
-      return breakData;
+      const breakData = {
+        username: getCurrentUser().username,
+        type: breakType,
+        startTime,
+        endTime,
+        duration,
+        elapsedTime: 0, // Initialize elapsed time to 0
+        exceededTime: 0, // Initialize exceeded time to 0
+      };
+
+      // Get existing user-specific break data from local storage
+      const existingBreakData = getUserBreakData();
+
+      // Append new break data to the existing data
+      const updatedBreakData = [...existingBreakData, breakData];
+
+      // Save updated break data to local storage
+      setUserBreakData(updatedBreakData);
+
+      return updatedBreakData;
+    }
+
+    function getCurrentUser() {
+      return JSON.parse(localStorage.getItem('currentUser')) || {};
+    }
+
+    function getUserBreakData() {
+      const currentUser = getCurrentUser();
+      return JSON.parse(localStorage.getItem(`breakData_${currentUser.username}`)) || [];
+    }
+
+    function setUserBreakData(updatedBreakData) {
+      const currentUser = getCurrentUser();
+      localStorage.setItem(`breakData_${currentUser.username}`, JSON.stringify(updatedBreakData));
     }
 
     function getRandomTime() {
@@ -166,7 +209,7 @@
     }
 
     function renderBarChart(canvas, data, breakType) {
-      const ctx = canvas.getContext('d');
+      const ctx = canvas.getContext('2d');
       const filteredData = data.filter(record => record.type === breakType);
 
       const barChart = new Chart(ctx, {
@@ -245,10 +288,21 @@
       const breakData = generateBreakData(breakType, breakDuration);
       
       // Add elapsed time and exceeded time to break data
+      const currentUser = getCurrentUser();
       breakData[0].elapsedTime = Math.floor((breakEndTime - breakStartTime) / 1000 / 60);
       breakData[0].exceededTime = Math.max(breakData[0].elapsedTime - breakData[0].duration, 0);
+      breakData[0].username = currentUser.username;
 
-      const worksheet = XLSX.utils.json_to_sheet(breakData);
+      // Get existing user-specific break data from local storage
+      const existingBreakData = getUserBreakData();
+
+      // Append new break data to the existing data
+      const updatedBreakData = [...existingBreakData, breakData[0]];
+
+      // Save updated break data to local storage
+      setUserBreakData(updatedBreakData);
+
+      const worksheet = XLSX.utils.json_to_sheet(updatedBreakData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'BreakData');
       XLSX.writeFile(workbook, 'break_data.xlsx');

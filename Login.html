@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
+  <title>Login Page</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      width: 300px;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h4>Login</h4>
+    <div class="input-field">
+      <input type="text" id="username" placeholder="Username">
+    </div>
+    <div class="input-field">
+      <input type="password" id="password" placeholder="Password">
+    </div>
+    <button class="btn waves-effect waves-light" onclick="authenticateUser()">Login</button>
+  </div>
+
+  <script>
+    const users = [
+      { username: 'user1', originalPassword: 'password1', password: '7c6a180b36896a0a8c02787eeafb0e4c' }, // MD5 hashed password for 'password1'
+      { username: 'user2', originalPassword: 'password2', password: '098f6bcd4621d373cade4e832627b4f6' }, // MD5 hashed password for 'password2'
+      // Add more users as needed
+    ];
+
+    function md5(str) {
+      return CryptoJS.MD5(str).toString(CryptoJS.enc.Hex);
+    }
+
+    function authenticateUser() {
+      const enteredUsername = document.getElementById('username').value;
+      const enteredPassword = md5(document.getElementById('password').value);
+
+      const user = users.find(u => u.username === enteredUsername && u.password === enteredPassword);
+
+      if (user) {
+        localStorage.setItem('currentUser', JSON.stringify({ username: user.username }));
+        window.location.href = 'index.html';
+      } else {
+        alert('Invalid username or password. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>
