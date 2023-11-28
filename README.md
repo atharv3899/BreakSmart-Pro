@@ -1,6 +1,6 @@
 # Break Smart Pro
 
-![Voitekk Logo](logo.jpg)   ![Break Smart Pro Logo](app_logo.jpg)
+![Voitekk Logo](logo.jpg)   ![Break Smart Pro Logo](app_logo.png)
 
 Welcome to Break Smart Pro, a web application to manage breaks for BPO agents. This project is designed to help agents track and optimize their break times effectively.
 
