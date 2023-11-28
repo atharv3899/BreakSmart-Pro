@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
   <title>Supervisor Dashboard</title>
   <style>
     body {
@@ -15,160 +14,92 @@
 
     .container {
       flex: 1;
+      padding: 20px;
     }
 
     #signatureFooter {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: #f8f9fa;
-      padding: 10px;
+      margin-top: auto;
       text-align: center;
       font-weight: bold;
-    }
-
-    #logo {
-      max-width: 100px;
-      max-height: 100px;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <img src="logo.jpg" alt="Logo" id="logo">
     <h1>Supervisor Dashboard</h1>
 
-    <div class="input-field">
-      <select id="agentDropdown">
-        <!-- Dynamically populate agent usernames here -->
-      </select>
-      <label for="agentDropdown">Select Agent</label>
-    </div>
-
-    <div class="input-field">
-      <select id="newBreakTypeDropdown">
-        <!-- Add new break types here -->
-      </select>
-      <label for="newBreakTypeDropdown">Select New Break Type</label>
-    </div>
-
-    <button class="btn waves-effect waves-light" onclick="addNewBreak()">Add New Break</button>
-
-    <div class="row">
-      <div class="col s12">
-        <canvas id="agentBarChart"></canvas>
+    <form id="breakForm">
+      <div class="input-field">
+        <select id="userDropdown" required>
+          <!-- Dynamically populate user usernames here -->
+        </select>
+        <label for="userDropdown">Select User</label>
       </div>
-    </div>
 
-    <div id="signatureFooter" class="center-align" style="margin-top: 20px;">Made by Atharv Joshi - Truly Dynamic</div>
+      <div class="input-field">
+        <input type="text" id="breakType" required>
+        <label for="breakType">Break Type</label>
+      </div>
+
+      <div class="input-field">
+        <input type="number" id="breakDuration" required>
+        <label for="breakDuration">Break Duration (minutes)</label>
+      </div>
+
+      <button class="btn waves-effect waves-light" type="submit">Add Break</button>
+    </form>
+
+    <div id="signatureFooter">Made by Atharv Joshi - Truly Dynamic</div>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script>
-    // Shared Functions
-
-    function groupBy(array, key) {
-      return array.reduce((result, item) => {
-        const groupKey = item[key];
-        result[groupKey] = result[groupKey] || [];
-        result[groupKey].push(item);
-        return result;
-      }, {});
-    }
-
-    function getRandomDuration() {
-      // Returns a random duration for break simulation
-      return Math.floor(Math.random() * 60) + 1;
-    }
-
-    // End Shared Functions
-
     $(document).ready(function(){
-      // Dynamically populate agent usernames in the dropdown
-      const agentDropdown = document.getElementById('agentDropdown');
-      const agentUsernames = JSON.parse(localStorage.getItem('users')).map(user => user.username);
+      // Dynamically populate user usernames in the dropdown
+      const userDropdown = document.getElementById('userDropdown');
+      const users = JSON.parse(localStorage.getItem('users')) || [];
 
-      agentUsernames.forEach(username => {
+      users.forEach(user => {
         const option = document.createElement('option');
-        option.value = username;
-        option.textContent = username;
-        agentDropdown.appendChild(option);
-      });
-
-      // Dynamically populate break types in the dropdown
-      const newBreakTypeDropdown = document.getElementById('newBreakTypeDropdown');
-      const breakTypes = ['Break Type 1', 'Break Type 2', 'Break Type 3']; // Add more as needed
-
-      breakTypes.forEach(breakType => {
-        const option = document.createElement('option');
-        option.value = breakType.toLowerCase().replace(/\s/g, '_');
-        option.textContent = breakType;
-        newBreakTypeDropdown.appendChild(option);
+        option.value = user.username;
+        option.textContent = user.username;
+        userDropdown.appendChild(option);
       });
 
       $('select').formSelect();
-      loadAgentBreakData(); // Load default agent's break data on page load
+
+      // Add event listener for the break form
+      document.getElementById('breakForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        addBreak();
+      });
     });
 
-    function addNewBreak() {
-      const agentUsername = $('#agentDropdown').val();
-      const newBreakType = $('#newBreakTypeDropdown').val();
+    function addBreak() {
+      const selectedUser = $('#userDropdown').val();
+      const breakType = $('#breakType').val();
+      const breakDuration = parseInt($('#breakDuration').val(), 10);
 
-      // Simulate new break data for the selected type
-      const newBreakData = generateBreakData(newBreakType, getRandomDuration(), agentUsername);
+      // Validate break duration
+      if (isNaN(breakDuration) || breakDuration <= 0) {
+        alert('Please enter a valid break duration.');
+        return;
+      }
 
-      // Get existing agent-specific break data from local storage
-      const existingAgentBreakData = JSON.parse(localStorage.getItem(`breakData_${agentUsername}`)) || [];
+      // Get existing breaks for the selected user from local storage
+      const userBreaks = JSON.parse(localStorage.getItem(`breaks_${selectedUser}`)) || [];
 
-      // Append new break data to the existing data
-      const updatedAgentBreakData = [...existingAgentBreakData, ...newBreakData];
+      // Add the new break
+      const newBreak = { type: breakType, duration: breakDuration };
+      userBreaks.push(newBreak);
 
-      // Save updated agent-specific break data to local storage
-      localStorage.setItem(`breakData_${agentUsername}`, JSON.stringify(updatedAgentBreakData));
+      // Save the updated breaks to local storage
+      localStorage.setItem(`breaks_${selectedUser}`, JSON.stringify(userBreaks));
 
-      // Reload agent break data and update the bar chart
-      loadAgentBreakData();
-    }
-
-    function loadAgentBreakData() {
-      const agentUsername = $('#agentDropdown').val();
-      const agentBreakData = JSON.parse(localStorage.getItem(`breakData_${agentUsername}`)) || [];
-
-      // Update the bar chart with the agent's break data
-      renderBarChart(document.getElementById('agentBarChart'), agentBreakData);
-    }
-
-    function renderBarChart(canvas, data) {
-      const ctx = canvas.getContext('2d');
-      
-      // Group break data by break type
-      const groupedData = groupBy(data, 'type');
-
-      // Get total duration for each break type
-      const breakTypes = Object.keys(groupedData);
-      const durations = breakTypes.map(type => groupedData[type].reduce((total, record) => total + record.duration, 0));
-
-      const barChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: breakTypes,
-          datasets: [{
-            data: durations,
-            backgroundColor: ['#36A2EB', '#FF6384', '#4CAF50', '#FFC107', '#E91E63', '#795548', '#9C27B0'],
-          }],
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              display: false,
-            },
-          },
-        },
-      });
+      alert('Break added successfully!');
+      // You can choose to reload the page or update any other part of the UI as needed.
     }
   </script>
 </body>
