@@ -137,8 +137,7 @@
       updateBreakStatus();
     }
 
-
-  function updateStopwatch() {
+    function updateStopwatch() {
       const minutes = Math.floor(remainingTime / 60);
       const seconds = remainingTime % 60;
       const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -157,6 +156,7 @@
       const breakStatus = document.getElementById('breakStatus');
       breakStatus.innerText = breakActive ? 'Break in progress' : 'No active break';
     }
+
     function exportToExcel() {
       const breakType = $('#breakTypeDropdown').val();
       const breakDuration = breakDurationMap[breakType];
