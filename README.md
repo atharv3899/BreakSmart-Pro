@@ -20,7 +20,7 @@ Welcome to Break Smart Pro, a web application to manage breaks for BPO agents. T
 
 ### Usage
 
-1. Open the [Break Smart Pro Dashboard] [https://github.com/atharv3899/BreakSmart-Pro].
+1. Open the [Break Smart Pro Dashboard] [[https://github.com/atharv3899/BreakSmart-Pro](https://atharv3899.github.io/BreakSmart-Pro/)].
 2. Log in using your credentials.
 3. Select a break type from the dropdown.
 4. Start the break stopwatch.
