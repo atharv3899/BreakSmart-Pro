@@ -1,6 +1,6 @@
 # Break Smart Pro
 
-![Break Smart Pro Logo](logo.jpg)
+![Break Smart Pro Logo](logo.jpg)    (app_logo.jpg)
 
 Welcome to Break Smart Pro, a web application to manage breaks for BPO agents. This project is designed to help agents track and optimize their break times effectively.
 
