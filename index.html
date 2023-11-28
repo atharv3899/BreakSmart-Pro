@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
-  <title>Login Page</title>
+  <title>Login</title>
   <style>
     body {
       display: flex;
@@ -15,48 +14,73 @@
       margin: 0;
     }
 
-    .card {
+    #loginCard {
       width: 300px;
-      padding: 20px;
+    }
+
+    #error {
+      color: red;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <h4>Login</h4>
-    <div class="input-field">
-      <input type="text" id="username" placeholder="Username">
+  <div class="container">
+    <div id="loginCard" class="card">
+      <div class="card-content">
+        <span class="card-title">Login</span>
+        <div class="input-field">
+          <input type="text" id="username" placeholder="Username">
+        </div>
+        <div class="input-field">
+          <input type="password" id="password" placeholder="Password">
+        </div>
+        <button class="btn waves-effect waves-light" onclick="login()">Login</button>
+        <div id="error"></div>
+      </div>
     </div>
-    <div class="input-field">
-      <input type="password" id="password" placeholder="Password">
-    </div>
-    <button class="btn waves-effect waves-light" onclick="authenticateUser()">Login</button>
   </div>
 
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script>
-    const users = [
-      { username: 'user1', originalPassword: 'password1', password: '7c6a180b36896a0a8c02787eeafb0e4c' }, // MD5 hashed password for 'password1'
-      { username: 'user2', originalPassword: 'password2', password: '098f6bcd4621d373cade4e832627b4f6' }, // MD5 hashed password for 'password2'
-      // Add more users as needed
-    ];
+    async function login() {
+      const username = $('#username').val();
+      const password = $('#password').val();
 
-    function md5(str) {
-      return CryptoJS.MD5(str).toString(CryptoJS.enc.Hex);
+      // Use the SHA-256 hashing algorithm
+      const hashedPassword = await hashPassword(password);
+
+      // Check if the login credentials match any user
+      if (validateCredentials(username, hashedPassword)) {
+        // Redirect to the appropriate page
+        window.location.href = username === 'super' ? 'super.html' : 'main.html';
+      } else {
+        // Display error message for invalid credentials
+        $('#error').text('Invalid username or password');
+      }
     }
 
-    function authenticateUser() {
-      const enteredUsername = document.getElementById('username').value;
-      const enteredPassword = md5(document.getElementById('password').value);
+    // Hash password using the SHA-256 algorithm
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashedPassword = hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+      return hashedPassword;
+    }
 
-      const user = users.find(u => u.username === enteredUsername && u.password === enteredPassword);
+    // Validate username and hashed password
+    function validateCredentials(username, hashedPassword) {
+      const userCredentials = {
+        super: 'ba21767ae494afe5a2165dcb3338c5323e9907050e34542c405d575cc31bf527', // Hashed 'superpassword'
+        user1: 'e6c3da5b206634d7f3f3586d747ffdb36b5c675757b380c6a5fe5c570c714349', //Hased 'pass1'
+        // Add more users and their hashed passwords as needed
+      };
 
-      if (user) {
-        localStorage.setItem('currentUser', JSON.stringify({ username: user.username }));
-        window.location.href = 'main.html';
-      } else {
-        alert('Invalid username or password. Please try again.');
-      }
+      return userCredentials[username] === hashedPassword;
     }
   </script>
 </body>

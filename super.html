@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+  <title>Supervisor Breaks Dashboard</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .container {
+      flex: 1;
+    }
+
+    #signatureFooter {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #f8f9fa;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    #logo {
+      max-width: 500px;
+      max-height: 500px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <img src="app_logo.png" alt="Logo" id="logo">
+    <h1>Supervisor Breaks Dashboard</h1>
+</div>
+
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script>
+    function createBreak() {
+      const breakType = $('#breakTypeDropdown').val();
+      const username = $('#username').val();
+
+      // Validate username input
+      if (!username) {
+        alert('Please enter a valid username.');
+        return;
+      }
+
+      // Use the selected break type to get the corresponding break duration
+      const breakDuration = getBreakDuration(breakType);
+
+      // Simulate break data for the selected type
+      const breakData = generateBreakData(username, breakType, breakDuration);
+
+      // Display success message
+      const breakStatus = document.getElementById('breakStatus');
+      breakStatus.innerText = `Break created for ${username} - ${breakType}`;
+
+      // Reset input fields
+      $('#username').val('');
+    }
+
+    function downloadBreakData() {
+      const username = $('#username').val();
+
+      // Validate username input
+      if (!username) {
+        alert('Please enter a valid username.');
+        return;
+      }
+
+      // Get user-specific break data from local storage
+      const userBreakData = getUserBreakData(username);
+
+      if (userBreakData.length === 0) {
+        alert(`No break data found for ${username}`);
+        return;
+      }
+
+      // Download break data as Excel
+      const worksheet = XLSX.utils.json_to_sheet(userBreakData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, `${username}_BreakData`);
+      XLSX.writeFile(workbook, `${username}_break_data.xlsx`);
+    }
+
+    function getBreakDuration(breakType) {
+      // Map break type to duration (similar to the agent dashboard)
+      const breakDurationMap = {
+        short: 5,
+        medium: 15,
+        long: 30,
+        // Add more break types as needed
+      };
+
+      return breakDurationMap[breakType] || 0;
+    }
+
+    function generateBreakData(username, breakType, duration) {
+      const startTime = getRandomTime();
+      const endTime = getRandomTime();
+      const breakData = {
+        username,
+        type: breakType,
+        startTime,
+        endTime,
+        duration,
+        elapsedTime: 0,
+        exceededTime: 0,
+      };
+
+      // Get existing user-specific break data from local storage
+      const existingBreakData = getUserBreakData(username);
+
+      // Append new break data to the existing data
+      const updatedBreakData = [...existingBreakData, breakData];
+
+      // Save updated break data to local storage
+      setUserBreakData(username, updatedBreakData);
+
+      return updatedBreakData;
+    }
+
+    function getRandomTime() {
+      const hours = String(Math.floor(Math.random() * 12)).padStart(2, '0');
+      const minutes = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    function getUserBreakData(username) {
+      return JSON.parse(localStorage.getItem(`breakData_${username}`)) || [];
+    }
+
+    function setUserBreakData(username, updatedBreakData) {
+      localStorage.setItem(`breakData_${username}`, JSON.stringify(updatedBreakData));
+    }
+  </script>
+</body>
+</html>
