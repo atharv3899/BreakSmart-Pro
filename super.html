@@ -7,31 +7,36 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
   <title>Supervisor Dashboard</title>
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
+     body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
 
-    .container {
-      flex: 1;
-    }
+  .container {
+    flex: 1;
+  }
 
-    #signatureFooter {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: #f8f9fa;
-      padding: 10px;
-      text-align: center;
-      font-weight: bold;
-    }
+  #signatureFooter {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f8f9fa;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+  }
 
-    #logo {
-      max-width: 500px;
-      max-height: 500px;
-    }
+  #logo {
+    max-width: 100px;
+    max-height: 100px;
+  }
+
+  /* Adjust z-index for dropdown */
+  .dropdown-content {
+    z-index: 1003; /* Set a higher value than other elements if necessary */
+  }
   </style>
 </head>
 <body>
