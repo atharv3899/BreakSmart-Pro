@@ -137,8 +137,51 @@
       updateBreakStatus();
     }
 
-    // ... (The rest of the previous dashboard code) ...
 
+  function updateStopwatch() {
+      const minutes = Math.floor(remainingTime / 60);
+      const seconds = remainingTime % 60;
+      const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      $('#stopwatch').text(`Time remaining: ${formattedTime}`);
+
+      if (remainingTime === 0) {
+        clearInterval(stopwatchInterval);
+        breakActive = false;
+        updateBreakStatus();
+      } else {
+        remainingTime--;
+      }
+    }
+
+    function updateBreakStatus() {
+      const breakStatus = document.getElementById('breakStatus');
+      breakStatus.innerText = breakActive ? 'Break in progress' : 'No active break';
+    }
+    function exportToExcel() {
+      const breakType = $('#breakTypeDropdown').val();
+      const breakDuration = breakDurationMap[breakType];
+      const breakData = generateBreakData(breakType, breakDuration);
+      
+      // Add elapsed time and exceeded time to break data
+      const currentUser = getCurrentUser();
+      breakData[0].elapsedTime = Math.floor((breakEndTime - breakStartTime) / 1000 / 60);
+      breakData[0].exceededTime = Math.max(breakData[0].elapsedTime - breakData[0].duration, 0);
+      breakData[0].username = currentUser.username;
+
+      // Get existing user-specific break data from local storage
+      const existingBreakData = getUserBreakData();
+
+      // Append new break data to the existing data
+      const updatedBreakData = [...existingBreakData, breakData[0]];
+
+      // Save updated break data to local storage
+      setUserBreakData(updatedBreakData);
+
+      const worksheet = XLSX.utils.json_to_sheet(updatedBreakData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'BreakData');
+      XLSX.writeFile(workbook, 'break_data.xlsx');
+    }
   </script>
 </body>
 </html>
