@@ -29,7 +29,7 @@ Welcome to Break Smart Pro, a web application to manage breaks for BPO agents. T
 
 ## Screenshots
 
-![Dashboard Screenshot](screenshots/dashboard.PNG)
+![Dashboard Screenshot](dashboard.PNG)
 
 ## Contributing
 
