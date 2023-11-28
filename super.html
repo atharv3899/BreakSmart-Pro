@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
   <title>Supervisor Dashboard</title>
   <style>
     body {
@@ -14,27 +15,37 @@
 
     .container {
       flex: 1;
-      padding: 20px;
     }
 
     #signatureFooter {
-      margin-top: auto;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #f8f9fa;
+      padding: 10px;
       text-align: center;
       font-weight: bold;
+    }
+
+    #logo {
+      max-width: 100px;
+      max-height: 100px;
     }
   </style>
 </head>
 <body>
 
   <div class="container">
+    <img src="logo.jpg" alt="Logo" id="logo">
     <h1>Supervisor Dashboard</h1>
 
     <form id="breakForm">
       <div class="input-field">
-        <select id="userDropdown" required>
-          <!-- Dynamically populate user usernames here -->
+        <select id="agentDropdown">
+          <!-- Dynamically populate agent usernames here -->
         </select>
-        <label for="userDropdown">Select User</label>
+        <label for="agentDropdown">Select Agent</label>
       </div>
 
       <div class="input-field">
@@ -47,59 +58,89 @@
         <label for="breakDuration">Break Duration (minutes)</label>
       </div>
 
-      <button class="btn waves-effect waves-light" type="submit">Add Break</button>
+      <button type="submit" class="btn waves-effect waves-light">Add Break</button>
     </form>
 
-    <div id="signatureFooter">Made by Atharv Joshi - Truly Dynamic</div>
+    <button class="btn waves-effect waves-light" onclick="downloadAllAgentBreaks()">Download All Agent Breaks</button>
+
+    <div id="signatureFooter" class="center-align" style="margin-top: 20px;">Made by Atharv Joshi - Truly Dynamic</div>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script>
     $(document).ready(function(){
-      // Dynamically populate user usernames in the dropdown
-      const userDropdown = document.getElementById('userDropdown');
-      const users = JSON.parse(localStorage.getItem('users')) || [];
+      // Dynamically populate agent usernames in the dropdown
+      const agentDropdown = document.getElementById('agentDropdown');
+      const agentUsernames = JSON.parse(localStorage.getItem('users')).map(user => user.username);
 
-      users.forEach(user => {
+      agentUsernames.forEach(username => {
         const option = document.createElement('option');
-        option.value = user.username;
-        option.textContent = user.username;
-        userDropdown.appendChild(option);
+        option.value = username;
+        option.textContent = username;
+        agentDropdown.appendChild(option);
       });
 
       $('select').formSelect();
 
-      // Add event listener for the break form
-      document.getElementById('breakForm').addEventListener('submit', function(event) {
+      // Form submission
+      $('#breakForm').submit(function(event) {
         event.preventDefault();
-        addBreak();
+
+        const agentUsername = $('#agentDropdown').val();
+        const breakType = $('#breakType').val();
+        const breakDuration = parseInt($('#breakDuration').val());
+
+        // Validate and add break
+        if (validateBreakForm(agentUsername, breakType, breakDuration)) {
+          addBreak(agentUsername, breakType, breakDuration);
+        }
       });
     });
 
-    function addBreak() {
-      const selectedUser = $('#userDropdown').val();
-      const breakType = $('#breakType').val();
-      const breakDuration = parseInt($('#breakDuration').val(), 10);
-
-      // Validate break duration
-      if (isNaN(breakDuration) || breakDuration <= 0) {
-        alert('Please enter a valid break duration.');
-        return;
+    function validateBreakForm(agentUsername, breakType, breakDuration) {
+      // Add your validation logic here
+      if (!agentUsername || !breakType || isNaN(breakDuration) || breakDuration <= 0) {
+        alert('Invalid input. Please fill all fields correctly.');
+        return false;
       }
+      return true;
+    }
 
-      // Get existing breaks for the selected user from local storage
-      const userBreaks = JSON.parse(localStorage.getItem(`breaks_${selectedUser}`)) || [];
+    function addBreak(agentUsername, breakType, breakDuration) {
+      const newBreakData = [{ type: breakType, duration: breakDuration }];
 
-      // Add the new break
-      const newBreak = { type: breakType, duration: breakDuration };
-      userBreaks.push(newBreak);
+      // Get existing agent-specific break data from local storage
+      const existingAgentBreakData = JSON.parse(localStorage.getItem(`breakData_${agentUsername}`)) || [];
 
-      // Save the updated breaks to local storage
-      localStorage.setItem(`breaks_${selectedUser}`, JSON.stringify(userBreaks));
+      // Append new break data to the existing data
+      const updatedAgentBreakData = [...existingAgentBreakData, ...newBreakData];
+
+      // Save updated agent-specific break data to local storage
+      localStorage.setItem(`breakData_${agentUsername}`, JSON.stringify(updatedAgentBreakData));
 
       alert('Break added successfully!');
-      // You can choose to reload the page or update any other part of the UI as needed.
+    }
+
+    function downloadAllAgentBreaks() {
+      const allAgentBreaks = {};
+
+      // Loop through all agent usernames
+      JSON.parse(localStorage.getItem('users')).forEach(user => {
+        const agentUsername = user.username;
+        const agentBreakData = JSON.parse(localStorage.getItem(`breakData_${agentUsername}`)) || [];
+
+        // Add agent break data to the object
+        allAgentBreaks[agentUsername] = agentBreakData;
+      });
+
+      // Create Excel workbook and download
+      const workbook = XLSX.utils.book_new();
+      Object.keys(allAgentBreaks).forEach(agentUsername => {
+        const worksheet = XLSX.utils.json_to_sheet(allAgentBreaks[agentUsername]);
+        XLSX.utils.book_append_sheet(workbook, worksheet, agentUsername);
+      });
+      XLSX.writeFile(workbook, 'all_agent_breaks.xlsx');
     }
   </script>
 </body>
