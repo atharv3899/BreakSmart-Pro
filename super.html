@@ -4,211 +4,112 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
-  <title>Supervisor Dashboard</title>
+  <title>Supervisor Break Data</title>
   <style>
     body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-  .container {
-    flex: 1;
-  }
+    .container {
+      flex: 1;
+      padding: 20px;
+    }
 
-  #signatureFooter {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: #f8f9fa;
-    padding: 10px;
-    text-align: center;
-    font-weight: bold;
-  }
+    #signatureFooter {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #f8f9fa;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
 
-  #logo {
-    max-width: 100px;
-    max-height: 100px;
-  }
-
-  /* Adjust z-index and positioning for dropdown */
-  .dropdown-content {
-    z-index: 1003; /* Set a higher value than other elements if necessary */
-    top: 100%;
-  }
+    #logo {
+      max-width: 100px;
+      max-height: 100px;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <img src="app_logo.png" alt="Logo" id="logo">
-    <h1>Supervisor Dashboard</h1>
+    <h1>Supervisor Break Data</h1>
 
-    <form id="breakForm">
-      <div class="input-field">
-        <select id="agentDropdown">
-          <!-- Dynamically populate agent usernames here -->
-        </select>
-        <label for="agentDropdown">Select Agent</label>
-      </div>
+    <!-- Table to display break data for each user -->
+    <table class="striped responsive-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Break Type</th>
+          <th>Duration (minutes)</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+        </tr>
+      </thead>
+      <tbody id="breakTableBody">
+        <!-- Break data will be dynamically inserted here -->
+      </tbody>
+    </table>
 
-      <div class="input-field">
-        <input type="text" id="breakType" required>
-        <label for="breakType">Break Type</label>
-      </div>
+    <!-- Create new break type form -->
+    <div class="row">
+      <form class="col s12">
+        <h5>Create New Break Type</h5>
+        <div class="row">
+          <div class="input-field col s6">
+            <input id="newBreakType" type="text">
+            <label for="newBreakType">Break Type</label>
+          </div>
+          <div class="input-field col s6">
+            <input id="newBreakDuration" type="number" min="1">
+            <label for="newBreakDuration">Duration (minutes)</label>
+          </div>
+        </div>
+        <button class="btn waves-effect waves-light" onclick="createNewBreakType()">Create Break Type</button>
+      </form>
+    </div>
 
-      <div class="input-field">
-        <input type="number" id="breakDuration" required>
-        <label for="breakDuration">Break Duration (minutes)</label>
-      </div>
-
-      <button type="submit" class="btn waves-effect waves-light">Add Break</button>
-    </form>
-
-    <button class="btn waves-effect waves-light" onclick="downloadAllAgentBreaks()">Download All Agent Breaks</button>
-
-    <div id="signatureFooter" class="center-align" style="margin-top: 20px;">Made by Atharv Joshi - Truly Dynamic</div>
+    <!-- Download buttons for day, week, and month excel data -->
+    <div class="row">
+      <button class="btn waves-effect waves-light" onclick="downloadExcel('day')">Download Day Data</button>
+      <button class="btn waves-effect waves-light" onclick="downloadExcel('week')">Download Week Data</button>
+      <button class="btn waves-effect waves-light" onclick="downloadExcel('month')">Download Month Data</button>
+    </div>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-
-
-
-  
   <script>
-     $(document).ready(function(){
-    // Dynamically populate agent usernames in the dropdown
-    const agentDropdown = document.getElementById('agentDropdown');
-    const agentUsernames = JSON.parse(localStorage.getItem('users')).map(user => user.username);
 
-    agentUsernames.forEach(username => {
-      const option = document.createElement('option');
-      option.value = username;  // Set the option value to the username
-      option.textContent = username;
-      agentDropdown.appendChild(option);
-    });
+    
+    // Function to create new break type
+    function createNewBreakType() {
+      const newBreakType = $('#newBreakType').val();
+      const newBreakDuration = parseInt($('#newBreakDuration').val());
 
-    $('select').formSelect();
-
-    // Form submission
-    $('#breakForm').submit(function(event) {
-      event.preventDefault();
-
-      const agentUsername = $('#agentDropdown').val();
-      const breakName = $('#breakName').val();
-      const breakType = $('#breakType').val();
-      const breakDuration = parseInt($('#breakDuration').val());
-
-      // Validate and add break
-      if (validateBreakForm(agentUsername, breakName, breakType, breakDuration)) {
-        addBreak(agentUsername, breakName, breakType, breakDuration);
-        loadAgentBreakData(); // Reload agent break data after adding a new break
+      // Validate and create break type
+      if (validateBreakType(newBreakType, newBreakDuration)) {
+        // Perform logic to create the break type (add to a global object or database)
+        alert(`New break type created: ${newBreakType} (${newBreakDuration} minutes)`);
       }
-    });
-  });
-  $(document).ready(function(){
-    // Dynamically populate agent usernames in the dropdown
-    const agentDropdown = document.getElementById('agentDropdown');
-    const agentUsernames = JSON.parse(localStorage.getItem('users')).map(user => user.username);
+    }
 
-    agentUsernames.forEach(username => {
-      const option = document.createElement('option');
-      option.value = username;  // Set the option value to the username
-      option.textContent = username;
-      agentDropdown.appendChild(option);
-    });
-
-    $('select').formSelect();
-
-    // Form submission
-    $('#breakForm').submit(function(event) {
-      event.preventDefault();
-
-      const agentUsername = $('#agentDropdown').val();
-      const breakType = $('#breakType').val();
-      const breakDuration = parseInt($('#breakDuration').val());
-
-      // Validate and add break
-      if (validateBreakForm(agentUsername, breakType, breakDuration)) {
-        addBreak(agentUsername, breakType, breakDuration);
-      }
-    });
-  });
-    $(document).ready(function(){
-      // Dynamically populate agent usernames in the dropdown
-      const agentDropdown = document.getElementById('agentDropdown');
-      const agentUsernames = JSON.parse(localStorage.getItem('users')).map(user => user.username);
-
-      agentUsernames.forEach(username => {
-        const option = document.createElement('option');
-        option.value = username;
-        option.textContent = username;
-        agentDropdown.appendChild(option);
-      });
-
-      $('select').formSelect();
-
-      // Form submission
-      $('#breakForm').submit(function(event) {
-        event.preventDefault();
-
-        const agentUsername = $('#agentDropdown').val();
-        const breakType = $('#breakType').val();
-        const breakDuration = parseInt($('#breakDuration').val());
-
-        // Validate and add break
-        if (validateBreakForm(agentUsername, breakType, breakDuration)) {
-          addBreak(agentUsername, breakType, breakDuration);
-        }
-      });
-    });
-
-    function validateBreakForm(agentUsername, breakType, breakDuration) {
-      // Add your validation logic here
-      if (!agentUsername || !breakType || isNaN(breakDuration) || breakDuration <= 0) {
-        alert('Invalid input. Please fill all fields correctly.');
-        return false;
-      }
+    // Function to validate new break type
+    function validateBreakType(breakType, duration) {
+      // Add validation logic here
       return true;
     }
 
-    function addBreak(agentUsername, breakType, breakDuration) {
-      const newBreakData = [{ type: breakType, duration: breakDuration }];
-
-      // Get existing agent-specific break data from local storage
-      const existingAgentBreakData = JSON.parse(localStorage.getItem(`breakData_${agentUsername}`)) || [];
-
-      // Append new break data to the existing data
-      const updatedAgentBreakData = [...existingAgentBreakData, ...newBreakData];
-
-      // Save updated agent-specific break data to local storage
-      localStorage.setItem(`breakData_${agentUsername}`, JSON.stringify(updatedAgentBreakData));
-
-      alert('Break added successfully!');
-    }
-
-    function downloadAllAgentBreaks() {
-      const allAgentBreaks = {};
-
-      // Loop through all agent usernames
-      JSON.parse(localStorage.getItem('users')).forEach(user => {
-        const agentUsername = user.username;
-        const agentBreakData = JSON.parse(localStorage.getItem(`breakData_${agentUsername}`)) || [];
-
-        // Add agent break data to the object
-        allAgentBreaks[agentUsername] = agentBreakData;
-      });
-
-      // Create Excel workbook and download
-      const workbook = XLSX.utils.book_new();
-      Object.keys(allAgentBreaks).forEach(agentUsername => {
-        const worksheet = XLSX.utils.json_to_sheet(allAgentBreaks[agentUsername]);
-        XLSX.utils.book_append_sheet(workbook, worksheet, agentUsername);
-      });
-      XLSX.writeFile(workbook, 'all_agent_breaks.xlsx');
+    // Function to download excel data
+    function downloadExcel(interval) {
+      // Perform logic to download excel data based on the specified interval (day, week, month)
+      alert(`Downloading excel data for ${interval}`);
     }
   </script>
 </body>
