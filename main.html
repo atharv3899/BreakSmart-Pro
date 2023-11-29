@@ -33,24 +33,29 @@
       max-width: 100px;
       max-height: 100px;
     }
+
+    .dropdown-content {
+      z-index: 1003;
+      top: 100% !important;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <img src="app_logo.png" alt="Logo" id="logo">
+    <img src="logo.jpg" alt="Logo" id="logo">
     <h1>Break Smart Pro</h1>
 
     <div class="input-field">
       <select id="breakTypeDropdown">
-        <option value="system_issue">System Issue (20 minutes)</option>
-        <option value="lunch">Lunch (30 minutes)</option>
-        <option value="bio_break">Bio Break (15 minutes)</option>
-        <option value="tea">Tea (15 minutes)</option>
-        <option value="tl_briefing">TL Briefing (60 minutes)</option>
-        <option value="er_hr_briefing">ER/HR Briefing (30 minutes)</option>
-        <option value="quality_briefing">Quality Briefing (60 minutes)</option>
-        <option value="training">Training (30 minutes)</option>
+        <option value="system issue">System Issue (20 minutes)</option>
+        <option value="Lunch">Lunch (30 minutes)</option>
+        <option value="Bio Break">Bio Break (15 minutes)</option>
+        <option value="Tea">Tea (15 minutes)</option>
+        <option value="Tl Briefing">TL Briefing (60 minutes)</option>
+        <option value="ER/HR Briefing">ER/HR Briefing (30 minutes)</option>
+        <option value="Quality Briefing">Quality Briefing (60 minutes)</option>
+        <option value="Training">Training (30 minutes)</option>
       </select>
       <label for="breakTypeDropdown">Select Break Type</label>
     </div>
@@ -89,16 +94,15 @@
     let breakStartTime;
     let breakEndTime;
 
-    // Mapping break duration to break type
-    const breakDurationMap = {
-      system_issue: 20,
-      lunch: 30,
-      bio_break: 15,
-      tea: 15,
-      tl_briefing: 60,
-      er_hr_briefing: 30,
-      quality_briefing: 60,
-      training: 30,
+    const breakTypes = {
+      'system issue': 20,
+      'Lunch': 30,
+      'Bio Break': 15,
+      'Tea': 15,
+      'Tl Briefing': 60,
+      'ER/HR Briefing': 30,
+      'Quality Briefing': 60,
+      'Training': 30,
     };
 
     $(document).ready(function(){
@@ -112,25 +116,110 @@
       const piePercentage = document.getElementById('piePercentage');
       const barPercentage = document.getElementById('barPercentage');
 
-      // Use the selected break type to get the corresponding break duration
-      const breakDuration = breakDurationMap[breakType];
-
-      // Simulate break data for the selected type
+      const breakDuration = breakTypes[breakType];
       const breakData = generateBreakData(breakType, breakDuration);
 
-      // Calculate total break time
       const totalBreakTime = breakData.reduce((total, breakRecord) => total + breakRecord.duration, 0);
 
-      // Update pie chart
-      renderPieChart(pieChartCanvas, breakData);
+      renderPieChart(pieChartCanvas, breakData, breakType);
       piePercentage.innerText = `Total: ${totalBreakTime} minutes`;
 
-      // Update bar chart
       renderBarChart(barChartCanvas, breakData, breakType);
       barPercentage.innerText = `Total: ${totalBreakTime} minutes`;
 
-      // Reset stopwatch
       clearInterval(stopwatchInterval);
+      remainingTime = 0;
+      breakActive = false;
+      updateStopwatch();
+      updateBreakStatus();
+    }
+
+    function generateBreakData(breakType, duration) {
+      const startTime = getRandomTime();
+      const endTime = getRandomTime();
+      const breakData = [{ type: breakType, startTime, endTime, duration }];
+      return breakData;
+    }
+
+    function getRandomTime() {
+      const hours = String(Math.floor(Math.random() * 12)).padStart(2, '0');
+      const minutes = String(Math.floor(Math.random() * 60)).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    function renderPieChart(canvas, data, breakType) {
+      const ctx = canvas.getContext('2d');
+      const filteredData = data.filter(record => record.type === breakType);
+      const totalDuration = filteredData.reduce((total, record) => total + record.duration, 0);
+
+      const pieChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: [breakType],
+          datasets: [{
+            data: [totalDuration],
+            backgroundColor: ['#FF6384'],
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+        },
+      });
+    }
+
+    function renderBarChart(canvas, data, breakType) {
+      const ctx = canvas.getContext('2d');
+      const filteredData = data.filter(record => record.type === breakType);
+
+      const barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [breakType],
+          datasets: [{
+            data: [filteredData.reduce((total, record) => total + record.duration, 0)],
+            backgroundColor: ['#36A2EB'],
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: false,
+            },
+          },
+        },
+      });
+    }
+
+    function startStopwatch() {
+      const breakType = $('#breakTypeDropdown').val();
+      const breakDuration = breakTypes[breakType];
+      const breakData = generateBreakData(breakType, breakDuration);
+      remainingTime = breakData.length > 0 ? breakData[0].duration * 60 : 0;
+      breakActive = true;
+      breakStartTime = new Date();
+      breakEndTime = null;
+
+      clearInterval(stopwatchInterval);
+      stopwatchInterval = setInterval(updateStopwatch, 1000);
+      updateBreakStatus();
+    }
+
+    function stopBreak() {
+      clearInterval(stopwatchInterval);
+      breakEndTime = new Date();
+      const elapsedTime = Math.floor((breakEndTime - breakStartTime) / 1000 / 60);
+
+      if (elapsedTime > remainingTime) {
+        const exceededTime = elapsedTime - remainingTime;
+        alert(`Break time exceeded by ${exceededTime} minutes.`);
+      }
+
       remainingTime = 0;
       breakActive = false;
       updateStopwatch();
@@ -159,25 +248,13 @@
 
     function exportToExcel() {
       const breakType = $('#breakTypeDropdown').val();
-      const breakDuration = breakDurationMap[breakType];
+      const breakDuration = breakTypes[breakType];
       const breakData = generateBreakData(breakType, breakDuration);
-      
-      // Add elapsed time and exceeded time to break data
-      const currentUser = getCurrentUser();
+
       breakData[0].elapsedTime = Math.floor((breakEndTime - breakStartTime) / 1000 / 60);
       breakData[0].exceededTime = Math.max(breakData[0].elapsedTime - breakData[0].duration, 0);
-      breakData[0].username = currentUser.username;
 
-      // Get existing user-specific break data from local storage
-      const existingBreakData = getUserBreakData();
-
-      // Append new break data to the existing data
-      const updatedBreakData = [...existingBreakData, breakData[0]];
-
-      // Save updated break data to local storage
-      setUserBreakData(updatedBreakData);
-
-      const worksheet = XLSX.utils.json_to_sheet(updatedBreakData);
+      const worksheet = XLSX.utils.json_to_sheet(breakData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'BreakData');
       XLSX.writeFile(workbook, 'break_data.xlsx');
